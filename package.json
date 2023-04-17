@@ -1,0 +1,19 @@
+{
+  "name": "ziqni-classic-migration-tool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ziqni-tech/ziqni-classic-migration-tool.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ziqni-tech/ziqni-classic-migration-tool/issues"
+  },
+  "homepage": "https://github.com/ziqni-tech/ziqni-classic-migration-tool#readme"
+}
