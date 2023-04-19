@@ -1,4 +1,4 @@
-const { axiosGetDataInstance, axiosPostDataInstance } = require('./axiosInstance');
+const { axiosGetDataInstance, getToken } = require('./axiosInstance');
 const writeFile = require('./utils/writeFile')
 
 const fetchProducts = async () => {
@@ -15,16 +15,16 @@ const fetchProducts = async () => {
 
       totalRecordsFound = data.meta.totalRecordsFound;
 
-      const members = data.data;
+      const products = data.data;
 
-      for (let i = 0; i < members.length; i++) {
-        const record = members[i];
+      for (let i = 0; i < products.length; i++) {
+        const record = products[i];
         const transformedProduct = transformProduct(record);
         allProducts.push(transformedProduct);
       }
 
       skip += limit;
-      recordsReceived += members.length;
+      recordsReceived += products.length;
     }
 
     const entityName = 'product';
@@ -59,9 +59,11 @@ function transformProduct(inputObject) {
 async function createProducts() {
   const productData = require('./mutatedData/product/products.json');
 
+  const api = await getToken();
+
   for (let i = 0; i < productData.length; i++) {
     try {
-      const { data } = await axiosPostDataInstance.post('/products', [productData[i]])
+      await api.post('/products', [productData[i]]);
     } catch (e) {
       console.log('create products error', e);
     }
