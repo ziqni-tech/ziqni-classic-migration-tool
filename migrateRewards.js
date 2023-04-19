@@ -1,8 +1,8 @@
-const { axiosGetDataInstance, axiosPostDataInstance } = require('./axiosInstance');
+const { axiosGetDataInstance, getToken } = require('./axiosInstance');
 const writeFile = require('./utils/writeFile');
-const capitalize = require('./utils/capitalize');
+const capitalizeFirstLetter = require('./utils/capitalizeFirstLetter');
 
-const fetchProducts = async () => {
+const fetchRewards = async () => {
   let isFetched = false;
   try {
     const allRewards = [];
@@ -16,65 +16,95 @@ const fetchProducts = async () => {
 
       totalRecordsFound = data.meta.totalRecordsFound;
 
-      const members = data.data;
+      const rewards = data.data;
 
-      for (let i = 0; i < members.length; i++) {
-        const record = members[i];
-        const transformedReward = transformReward(record);
-        allRewards.push(transformedReward);
+      for (let i = 0; i < rewards.length; i++) {
+        const record = rewards[i];
+        allRewards.push(record);
       }
 
       skip += limit;
-      recordsReceived += members.length;
+      recordsReceived += rewards.length;
+    }
+
+    const api = await getToken();
+    const { data: resultsData } = await api.post('/custom-fields/query', {
+      limit: null,
+      skip: 0,
+      multiFields: [
+        {
+          queryFields: ['appliesTo'],
+          queryValue: 'Reward'
+        }
+      ]
+    })
+    const customFields = await resultsData.results.reduce((acc, obj) => {
+      acc[obj['key']] = null
+      return acc
+    }, {});
+
+    const rewardWithCustomFields = [];
+
+    for (let i = 0; i < allRewards.length; i++) {
+      const record = allRewards[i];
+      const transformedReward = await transformReward(record, customFields);
+      rewardWithCustomFields.push(transformedReward);
     }
 
     const entityName = 'reward';
-    writeFile(entityName, allRewards);
+    writeFile(entityName, rewardWithCustomFields);
 
     isFetched = true;
   } catch (e) {
     console.error('Fetch rewards error => ', e);
   }
 
-  // if (isFetched) await createRewards();
+  if (isFetched) await createRewards();
 };
 
-function transformReward(inputObject) {
+async function transformReward(inputObject, customFields) {
   const metadata = inputObject.metadata ? inputObject.metadata[0] : null;
-  delete metadata?.jsonClass
+  delete metadata?.jsonClass;
+
+  const constraints = [];
+  if (inputObject.memberAcknowledgmentRequired === true) {
+    constraints.push('memberAcknowledgmentRequired')
+  }
 
   return {
-    customFields: {},
-    tags: [],
-    metadata: {},
-    entityType: capitalize(inputObject.entityType),
-    entityId: inputObject.entityId,
     name: inputObject.rewardName,
-    description: inputObject.description,
-    rewardRank: inputObject.rewardRank,
+    tags: null,
+    rewardRank: inputObject.rewardRank.length ? inputObject.rewardRank : '1',
     rewardValue: inputObject.value,
-    icon: '',
-    issueLimit: '',
-    delay: inputObject.delay,
-    pointInTime: inputObject.pointInTime,
-    period: inputObject.period,
-    translations: [],
-    constraints: '',
-    rewardTypeId: inputObject.rewardType
+    entityId: inputObject.entityId,
+    entityType: capitalizeFirstLetter(inputObject.entityType),
+    constraints: constraints,
+    rewardTypeId: inputObject.rewardType,
+    icon: null,
+    description: inputObject.description.length ? inputObject.description : null,
+    issueLimit: null,
+    delay: inputObject.delay ?? 0,
+    pointInTime: null,
+    period: inputObject.period ?? 0,
+    customFields: customFields,
+    metadata: metadata,
+    translations: []
   };
 }
 
 async function createRewards() {
   const rewardData = require('./mutatedData/reward/rewards.json');
 
-  for (let i = 0; i < rewardData.length; i++) {
+  const api = await getToken();
+
+  for (let i = 0; i < 3; i++) {
     try {
-      const { data } = await axiosPostDataInstance.post('/rewards', [rewardData[i]])
+      await api.post('/rewards', [rewardData[i]])
     } catch (e) {
-      console.log('create rewards error', e);
+      console.log('create rewards error', e.response.data);
     }
   }
 }
 
-fetchProducts()
+fetchRewards()
 
