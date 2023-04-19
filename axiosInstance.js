@@ -1,8 +1,8 @@
 const axios = require('axios');
 
 const GET_DATA_URL = 'https://app.ziqni.com/api';
-const get_data_space = 'supersport_staging';
-const get_data_api_key = '5877bdd25fbb4a969ac870734c7f7d92';
+const get_data_space = '<<SPACE-NAME>>';
+const get_data_api_key = '<<API-KEY>>';
 
 const SPACE = 'first-space'
 
