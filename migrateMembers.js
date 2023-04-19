@@ -1,6 +1,6 @@
 const writeFile = require('./utils/writeFile')
 
-const { axiosGetDataInstance, axiosPostDataInstance, post_data_token } = require('./axiosInstance');
+const { axiosGetDataInstance, getToken } = require('./axiosInstance');
 
 const fetchMembers = async () => {
   try {
@@ -37,7 +37,7 @@ const fetchMembers = async () => {
     }
 
   } catch (e) {
-    console.error('ERROR => ', e.response);
+    console.error('Fetch members error => ', e.response);
   }
 };
 
@@ -57,9 +57,11 @@ function transformMember(inputObject) {
 async function createMembers() {
   const memberData = require('./mutatedData/member/members.json');
 
+  const api = await getToken();
+
   for (let i = 0; i < memberData.length; i++) {
     try {
-      const { data } = await axiosPostDataInstance.post('/members', [memberData[i]])
+      await api.post('/members', [memberData[i]])
     } catch (e) {
       console.log('create members error', e);
     }
@@ -69,8 +71,5 @@ async function createMembers() {
 function parseJwt (token) {
   return JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
 }
-
-// const token = parseJwt(post_data_token)
-// console.log('TOKEN', token);
 
 fetchMembers();
