@@ -40,7 +40,7 @@ const fetchUnitsOfMeasure = async () => {
       multiFields: [
         {
           queryFields: ['appliesTo'],
-          queryValue: 'Reward'
+          queryValue: 'UnitOfMeasure'
         }
       ]
     });
