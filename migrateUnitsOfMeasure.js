@@ -1,5 +1,11 @@
 const { axiosGetDataInstance, getToken } = require('./axiosInstance');
-const writeFile = require('./utils/writeFile')
+const writeFile = require('./utils/writeFile');
+
+const entityName = 'unitsOfMeasure';
+
+const downloadedFileName = 'downloadedFromOldPlatform';
+const transformedFileName = 'transformed';
+const createdFileName = 'createdOnNewPlatform';
 
 const fetchUnitsOfMeasure = async () => {
   let isFetched = false;
@@ -19,7 +25,6 @@ const fetchUnitsOfMeasure = async () => {
 
       for (let i = 0; i < unitsOfMeasure.length; i++) {
         const record = unitsOfMeasure[i];
-        // const transformedUnitsOfMeasure = transformUnitsOfMeasure(record);
         allUnitsOfMeasure.push(record);
       }
 
@@ -27,38 +32,86 @@ const fetchUnitsOfMeasure = async () => {
       recordsReceived += unitsOfMeasure.length;
     }
 
-    const entityName = 'unitsOfMeasure';
-    writeFile(entityName, allUnitsOfMeasure);
+    const api = await getToken();
+
+    const { data: resultsData } = await api.post('/custom-fields/query', {
+      limit: null,
+      skip: 0,
+      multiFields: [
+        {
+          queryFields: ['appliesTo'],
+          queryValue: 'Reward'
+        }
+      ]
+    });
+
+    const customFields = await resultsData.results.reduce((acc, obj) => {
+      acc[obj['key']] = null;
+      return acc;
+    }, {});
+
+    const unitOfMeasureWithCustomFields = [];
+
+    for (let i = 0; i < allUnitsOfMeasure.length; i++) {
+      const record = allUnitsOfMeasure[i];
+      const transformedUnitsOfMeasure = transformUnitsOfMeasure(record, customFields);
+      unitOfMeasureWithCustomFields.push(transformedUnitsOfMeasure);
+    }
+
+    writeFile(entityName, downloadedFileName, allUnitsOfMeasure);
+    writeFile(entityName, transformedFileName, unitOfMeasureWithCustomFields);
 
     isFetched = true;
   } catch (e) {
     console.error('Fetch UnitsOfMeasure error => ', e);
   }
 
-  // if (isFetched) await createUnitsOfMeasure()
+  if (isFetched) await createUnitsOfMeasure();
 };
 
-function transformUnitsOfMeasure(inputObject) {
+function transformUnitsOfMeasure(inputObject, customFields) {
   const metadata = inputObject.metadata ? inputObject.metadata[0] : null;
-  delete metadata?.jsonClass
+  delete metadata?.jsonClass;
 
   return {
-
+    name: inputObject.name,
+    key: inputObject.key,
+    tags: null,
+    multiplier: inputObject.multiplier,
+    unitOfMeasureType: inputObject.unitOfMeasureType,
+    isoCode: inputObject.isoCode.length ? inputObject.isoCode : null,
+    symbol: inputObject.symbol.length ? inputObject.symbol : null,
+    description: inputObject.description.length ? inputObject.description : null,
+    customFields: customFields,
+    metadata: null
   };
 }
 
 async function createUnitsOfMeasure() {
-  const unitsOfMeasureData = require('./mutatedData/unitsOfMeasure/unitsOfMeasure.json');
+  const unitsOfMeasureData = require(`./entitiesData/${entityName}/transformed.json`);
 
   const api = await getToken();
+  const createdUnitsOfMeasure = [];
 
   for (let i = 0; i < unitsOfMeasureData.length; i++) {
     try {
-      await api.post('/', [unitsOfMeasureData[i]]);
+      const { data } = await api.post('/units-of-measure', [unitsOfMeasureData[i]]);
+
+      if (data.errors) {
+        data.errors.forEach(item => {
+          console.log('Create UnitsOfMeasure Error => ', item.detail);
+        });
+      }
+
+      if (data.results.length) {
+        createdUnitsOfMeasure.push(data.results[0]);
+      }
     } catch (e) {
-      console.log('create UnitsOfMeasure error', e);
+      console.log('Create UnitsOfMeasure error', e);
     }
   }
+
+  writeFile(entityName, createdFileName, createdUnitsOfMeasure);
 }
 
-fetchUnitsOfMeasure()
+fetchUnitsOfMeasure();
