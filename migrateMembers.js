@@ -1,10 +1,18 @@
-const writeFile = require('./utils/writeFile')
-
 const { axiosGetDataInstance, getToken } = require('./axiosInstance');
+const writeFile = require('./utils/writeFile');
+
+const entityName = 'member';
+
+const downloadedFileName = 'downloadedFromOldPlatform';
+const transformedFileName = 'transformed';
+const createdFileName = 'createdOnNewPlatform';
 
 const fetchMembers = async () => {
+  let isFetched = false;
+
   try {
     const allMembers = [];
+    const transformedMembers = [];
     let totalRecordsFound = 5;
     const limit = 100;
     let skip = 0;
@@ -19,26 +27,25 @@ const fetchMembers = async () => {
 
       for (let i = 0; i < members.length; i++) {
         const record = members[i];
+        allMembers.push(record);
+
         const transformedMember = transformMember(record);
-        allMembers.push(transformedMember);
+        transformedMembers.push(transformedMember);
       }
 
       skip += limit;
       recordsReceived += members.length;
     }
 
-    const entityName = 'member';
-    writeFile(entityName, allMembers)
+    writeFile(entityName, downloadedFileName, allMembers);
+    writeFile(entityName, transformedFileName, transformedMembers);
 
-    const isDataSaved = true;
-
-    if (isDataSaved) {
-      await createMembers()
-    }
-
+    isFetched = true;
   } catch (e) {
     console.error('Fetch members error => ', e.response);
   }
+
+  if (isFetched) await createMembers();
 };
 
 function transformMember(inputObject) {
@@ -55,21 +62,30 @@ function transformMember(inputObject) {
 }
 
 async function createMembers() {
-  const memberData = require('./mutatedData/member/members.json');
+  const memberData = require(`./entitiesData/${entityName}/transformed.json`);
 
   const api = await getToken();
+  const createdMembers = [];
 
   for (let i = 0; i < memberData.length; i++) {
     try {
-      await api.post('/members', [memberData[i]])
+      const { data } = await api.post('/members', [memberData[i]]);
+
+      if (data.errors) {
+        data.errors.forEach(item => {
+          console.log('Create member Error => ', item.detail);
+        });
+      }
+
+      if (data.results.length) {
+        createdMembers.push(data.results[0]);
+      }
     } catch (e) {
       console.log('create members error', e);
     }
   }
-}
 
-function parseJwt (token) {
-  return JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+  writeFile(entityName, createdFileName, createdMembers);
 }
 
 fetchMembers();
