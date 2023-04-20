@@ -3,12 +3,11 @@ const writeFile = require('./utils/writeFile');
 
 const entityName = 'unitsOfMeasure';
 
-const downloadedFileName = 'downloadedFromOldPlatform';
+const downloadedFileName = 'downloaded';
 const transformedFileName = 'transformed';
-const createdFileName = 'createdOnNewPlatform';
+const createdFileName = 'created';
 
-const fetchUnitsOfMeasure = async () => {
-  let isFetched = false;
+const fetch = async () => {
   try {
     const allUnitsOfMeasure = [];
     let totalRecordsFound = 5;
@@ -31,42 +30,41 @@ const fetchUnitsOfMeasure = async () => {
       skip += limit;
       recordsReceived += unitsOfMeasure.length;
     }
-
-    const api = await getToken();
-
-    const { data: resultsData } = await api.post('/custom-fields/query', {
-      limit: null,
-      skip: 0,
-      multiFields: [
-        {
-          queryFields: ['appliesTo'],
-          queryValue: 'UnitOfMeasure'
-        }
-      ]
-    });
-
-    const customFields = await resultsData.results.reduce((acc, obj) => {
-      acc[obj['key']] = null;
-      return acc;
-    }, {});
-
-    const unitOfMeasureWithCustomFields = [];
-
-    for (let i = 0; i < allUnitsOfMeasure.length; i++) {
-      const record = allUnitsOfMeasure[i];
-      const transformedUnitsOfMeasure = transformUnitsOfMeasure(record, customFields);
-      unitOfMeasureWithCustomFields.push(transformedUnitsOfMeasure);
-    }
-
     writeFile(entityName, downloadedFileName, allUnitsOfMeasure);
-    writeFile(entityName, transformedFileName, unitOfMeasureWithCustomFields);
-
-    isFetched = true;
   } catch (e) {
     console.error('Fetch UnitsOfMeasure error => ', e);
   }
+};
 
-  if (isFetched) await createUnitsOfMeasure();
+const transform = async () => {
+  const allUnitsOfMeasure = require(`./entitiesData/${entityName}/downloaded.json`);
+  const api = await getToken();
+
+  const { data: resultsData } = await api.post('/custom-fields/query', {
+    limit: null,
+    skip: 0,
+    multiFields: [
+      {
+        queryFields: ['appliesTo'],
+        queryValue: 'UnitOfMeasure'
+      }
+    ]
+  });
+
+  const customFields = await resultsData.results.reduce((acc, obj) => {
+    acc[obj['key']] = null;
+    return acc;
+  }, {});
+
+  const unitOfMeasureWithCustomFields = [];
+
+  for (let i = 0; i < allUnitsOfMeasure.length; i++) {
+    const record = allUnitsOfMeasure[i];
+    const transformedUnitsOfMeasure = transformUnitsOfMeasure(record, customFields);
+    unitOfMeasureWithCustomFields.push(transformedUnitsOfMeasure);
+  }
+
+  writeFile(entityName, transformedFileName, unitOfMeasureWithCustomFields);
 };
 
 function transformUnitsOfMeasure(inputObject, customFields) {
@@ -87,7 +85,7 @@ function transformUnitsOfMeasure(inputObject, customFields) {
   };
 }
 
-async function createUnitsOfMeasure() {
+async function create() {
   const unitsOfMeasureData = require(`./entitiesData/${entityName}/transformed.json`);
 
   const api = await getToken();
@@ -114,4 +112,21 @@ async function createUnitsOfMeasure() {
   writeFile(entityName, createdFileName, createdUnitsOfMeasure);
 }
 
-fetchUnitsOfMeasure();
+const args = process.argv.slice(2);
+
+if (args.length > 0) {
+  switch (args[0]) {
+    case 'create':
+      create();
+      break;
+    case 'transform':
+      transform();
+      break;
+    case 'fetch':
+      fetch();
+      break;
+  }
+} else {
+  console.log('You must specify the function name (create / transform / fetch) in the command line argument! ' +
+    'For example - node fileName.js create');
+}

@@ -3,16 +3,13 @@ const writeFile = require('./utils/writeFile');
 
 const entityName = 'member';
 
-const downloadedFileName = 'downloadedFromOldPlatform';
+const downloadedFileName = 'downloaded';
 const transformedFileName = 'transformed';
-const createdFileName = 'createdOnNewPlatform';
+const createdFileName = 'created';
 
-const fetchMembers = async () => {
-  let isFetched = false;
-
+const fetch = async () => {
   try {
     const allMembers = [];
-    const transformedMembers = [];
     let totalRecordsFound = 5;
     const limit = 100;
     let skip = 0;
@@ -28,9 +25,6 @@ const fetchMembers = async () => {
       for (let i = 0; i < members.length; i++) {
         const record = members[i];
         allMembers.push(record);
-
-        const transformedMember = transformMember(record);
-        transformedMembers.push(transformedMember);
       }
 
       skip += limit;
@@ -38,15 +32,23 @@ const fetchMembers = async () => {
     }
 
     writeFile(entityName, downloadedFileName, allMembers);
-    writeFile(entityName, transformedFileName, transformedMembers);
-
-    isFetched = true;
   } catch (e) {
     console.error('Fetch members error => ', e.response);
   }
-
-  if (isFetched) await createMembers();
 };
+
+const transform = async () => {
+  const allMembers = require(`./entitiesData/${entityName}/downloaded.json`);
+
+  const transformedMembers = [];
+  for (let i = 0; i < allMembers.length; i++) {
+    const record = allMembers[i];
+    const transformedMember = transformMember(record);
+    transformedMembers.push(transformedMember);
+  }
+
+  writeFile(entityName, transformedFileName, transformedMembers);
+}
 
 function transformMember(inputObject) {
   return {
@@ -61,7 +63,7 @@ function transformMember(inputObject) {
   };
 }
 
-async function createMembers() {
+async function create() {
   const memberData = require(`./entitiesData/${entityName}/transformed.json`);
 
   const api = await getToken();
@@ -88,4 +90,21 @@ async function createMembers() {
   writeFile(entityName, createdFileName, createdMembers);
 }
 
-fetchMembers();
+const args = process.argv.slice(2);
+
+if (args.length > 0) {
+  switch (args[0]) {
+    case 'create':
+      create();
+      break;
+    case 'transform':
+      transform();
+      break;
+    case 'fetch':
+      fetch();
+      break;
+  }
+} else {
+  console.log('You must specify the function name (create / transform / fetch) in the command line argument! ' +
+    'For example - node fileName.js create');
+}

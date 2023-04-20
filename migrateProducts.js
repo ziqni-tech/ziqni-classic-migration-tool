@@ -3,15 +3,13 @@ const writeFile = require('./utils/writeFile');
 
 const entityName = 'product';
 
-const downloadedFileName = 'downloadedFromOldPlatform';
+const downloadedFileName = 'downloaded';
 const transformedFileName = 'transformed';
-const createdFileName = 'createdOnNewPlatform';
+const createdFileName = 'created';
 
-const fetchProducts = async () => {
-  let isFetched = false;
+const fetch = async () => {
   try {
     const allProducts = [];
-    const transformedProducts = [];
     let totalRecordsFound = 5;
     const limit = 100;
     let skip = 0;
@@ -27,9 +25,6 @@ const fetchProducts = async () => {
       for (let i = 0; i < products.length; i++) {
         const record = products[i];
         allProducts.push(record);
-
-        const transformedProduct = transformProduct(record);
-        transformedProducts.push(transformedProduct);
       }
 
       skip += limit;
@@ -37,15 +32,23 @@ const fetchProducts = async () => {
     }
 
     writeFile(entityName, downloadedFileName, allProducts);
-    writeFile(entityName, transformedFileName, transformedProducts);
-
-    isFetched = true;
   } catch (e) {
     console.error('Fetch products error => ', e);
   }
-
-  if (isFetched) await createProducts();
 };
+
+const transform = async () => {
+  const allProducts = require(`./entitiesData/${entityName}/downloaded.json`);
+
+  const transformedMembers = [];
+  for (let i = 0; i < allProducts.length; i++) {
+    const record = allProducts[i];
+    const transformedMember = transformProduct(record);
+    transformedMembers.push(transformedMember);
+  }
+
+  writeFile(entityName, transformedFileName, transformedMembers);
+}
 
 function transformProduct(inputObject) {
   const metadata = inputObject.metadata ? inputObject.metadata[0] : null;
@@ -65,7 +68,7 @@ function transformProduct(inputObject) {
   };
 }
 
-async function createProducts() {
+async function create() {
   const productData = require(`./entitiesData/${entityName}/transformed.json`);
 
   const api = await getToken();
@@ -92,4 +95,21 @@ async function createProducts() {
   writeFile(entityName, createdFileName, createdProducts);
 }
 
-fetchProducts();
+const args = process.argv.slice(2);
+
+if (args.length > 0) {
+  switch (args[0]) {
+    case 'create':
+      create();
+      break;
+    case 'transform':
+      transform();
+      break;
+    case 'fetch':
+      fetch();
+      break;
+  }
+} else {
+  console.log('You must specify the function name (create / transform / fetch) in the command line argument! ' +
+    'For example - node fileName.js create');
+}
