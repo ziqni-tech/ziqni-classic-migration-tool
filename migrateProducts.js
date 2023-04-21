@@ -6,6 +6,7 @@ const entityName = 'product';
 const downloadedFileName = 'downloaded';
 const transformedFileName = 'transformed';
 const createdFileName = 'created';
+const errorFileName = 'errors';
 
 const fetch = async () => {
   try {
@@ -48,7 +49,7 @@ const transform = async () => {
   }
 
   writeFile(entityName, transformedFileName, transformedMembers);
-}
+};
 
 function transformProduct(inputObject) {
   const metadata = inputObject.metadata ? inputObject.metadata[0] : null;
@@ -73,15 +74,20 @@ async function create() {
 
   const api = await getToken();
   const createdProducts = [];
+  const errors = [];
 
   for (let i = 0; i < productData.length; i++) {
     try {
       const { data } = await api.post('/products', [productData[i]]);
 
-      if (data.errors) {
-        data.errors.forEach(item => {
-          console.log('Create product Error => ', item.detail);
-        });
+      if (data.errors.length) {
+        const error = {
+          name: productData[i].name,
+          productRefId: productData[i].productRefId,
+          errors: data.errors
+        };
+        errors.push(error);
+
       }
 
       if (data.results.length) {
@@ -92,7 +98,18 @@ async function create() {
     }
   }
 
-  writeFile(entityName, createdFileName, createdProducts);
+  console.log('productData', createdProducts.length);
+
+  if (errors.length) {
+    console.log('errors', errors.length);
+    writeFile(entityName, errorFileName, errors);
+  }
+
+  if (createdProducts.length) {
+    console.log('copied products', createdProducts.length);
+    writeFile(entityName, createdFileName, createdProducts);
+  }
+
 }
 
 const args = process.argv.slice(2);

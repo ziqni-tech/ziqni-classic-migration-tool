@@ -6,6 +6,7 @@ const entityName = 'member';
 const downloadedFileName = 'downloaded';
 const transformedFileName = 'transformed';
 const createdFileName = 'created';
+const errorFileName = 'errors';
 
 const fetch = async () => {
   try {
@@ -48,7 +49,7 @@ const transform = async () => {
   }
 
   writeFile(entityName, transformedFileName, transformedMembers);
-}
+};
 
 function transformMember(inputObject) {
   return {
@@ -68,26 +69,44 @@ async function create() {
 
   const api = await getToken();
   const createdMembers = [];
+  const errors = [];
 
   for (let i = 0; i < memberData.length; i++) {
     try {
       const { data } = await api.post('/members', [memberData[i]]);
 
-      if (data.errors) {
-        data.errors.forEach(item => {
-          console.log('Create member Error => ', item.detail);
-        });
+      if (data.errors.length) {
+        const error = {
+          name: memberData[i].name,
+          memberRefId: memberData[i].memberRefId,
+          errors: data.errors
+        };
+        errors.push(error);
+
       }
 
       if (data.results.length) {
-        createdMembers.push(data.results[0]);
+        const saveData = {
+          name: memberData[i].name,
+          memberRefId: memberData[i].memberRefId,
+          createData: data.results[0]
+        };
+        createdMembers.push(saveData);
       }
     } catch (e) {
       console.log('create members error', e);
     }
   }
 
-  writeFile(entityName, createdFileName, createdMembers);
+  if (errors.length) {
+    console.log('errors', errors.length);
+    writeFile(entityName, errorFileName, errors);
+  }
+
+  if (createdMembers.length) {
+    console.log('copied members', createdMembers.length);
+    writeFile(entityName, createdFileName, createdMembers);
+  }
 }
 
 const args = process.argv.slice(2);
