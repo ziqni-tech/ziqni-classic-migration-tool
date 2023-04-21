@@ -5,7 +5,7 @@ const get_data_url = process.env.GET_DATA_URL;
 const get_data_space = process.env.GET_DATA_SPACE;
 const admin_api_key = process.env.GET_DATA_ADMIN_API_KEY;
 
-const POST_DATA_URL = 'https://api.ziqni.com';
+const post_data_url = process.env.POST_DATA_URL;
 const clientId = `${process.env.POST_DATA_SPACE}.ziqni.app`;
 
 const username = process.env.USER_NAME;
@@ -30,7 +30,7 @@ const getToken = async () => {
     const { access_token } = data
 
     return axios.create({
-      baseURL: `${POST_DATA_URL}`,
+      baseURL: post_data_url,
       headers: {
         Authorization: `Bearer ${access_token}`,
         'Content-Type': 'application/json',
