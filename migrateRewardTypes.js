@@ -143,7 +143,7 @@ async function create() {
   const api = await getToken();
   const createdRewardTypes = [];
 
-  for (let i = 4; i < 5; i++) {
+  for (let i = 0; i < rewardTypesData.length; i++) {
     try {
       const { data } = await api.post('/reward-types', [rewardTypesData[i]]);
 
