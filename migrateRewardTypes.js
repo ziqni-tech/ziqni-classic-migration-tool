@@ -53,7 +53,7 @@ const transform = async () => {
     ]
   });
 
-  const customFields = await resultsData.results.reduce((acc, obj) => {
+  const unitsOfMeasureCustomFields = await resultsData.results.reduce((acc, obj) => {
     acc[obj['key']] = null;
     return acc;
   }, {});
@@ -61,7 +61,7 @@ const transform = async () => {
   const unitsOfMeasureKey = generateKeyName();
 
   const unitOfMeasure = {
-    customFields: customFields,
+    customFields: unitsOfMeasureCustomFields,
     tags: [],
     metadata: {},
     name: 'AUTO-GENERATED',
@@ -73,9 +73,8 @@ const transform = async () => {
     unitOfMeasureType: 'Other'
   };
 
-  console.log('unitsOfMeasure', unitOfMeasure);
-
   let unitsOfMeasureId = null;
+
   try {
     const { data } = await api.post('/units-of-measure', [unitOfMeasure]);
 
@@ -98,7 +97,7 @@ const transform = async () => {
     multiFields: [
       {
         queryFields: ['appliesTo'],
-        queryValue: 'UnitOfMeasure'
+        queryValue: 'RewardType'
       }
     ]
   });
@@ -109,6 +108,7 @@ const transform = async () => {
   }, {});
 
   const rewardTypesWithCustomFields = [];
+
   for (let i = 0; i < allRewardTypes.length; i++) {
     const record = allRewardTypes[i];
     const transformedRewardTypes = transformRewardTypes(record, rewardTypeCustomFields, unitsOfMeasureId);
