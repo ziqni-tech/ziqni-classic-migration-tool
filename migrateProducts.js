@@ -72,12 +72,13 @@ function transformProduct(inputObject) {
 async function create() {
   const productData = require(`./entitiesData/${entityName}/transformed.json`);
 
-  const api = await getToken();
   const createdProducts = [];
   const errors = [];
 
   for (let i = 0; i < productData.length; i++) {
     try {
+      const api = await getToken();
+
       const { data } = await api.post('/products', [productData[i]]);
 
       if (data.errors.length) {
@@ -98,7 +99,7 @@ async function create() {
     }
   }
 
-  console.log('productData', createdProducts.length);
+  console.log('productData', productData.length);
 
   if (errors.length) {
     console.log('errors', errors.length);
@@ -109,7 +110,6 @@ async function create() {
     console.log('copied products', createdProducts.length);
     writeFile(entityName, createdFileName, createdProducts);
   }
-
 }
 
 const args = process.argv.slice(2);

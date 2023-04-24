@@ -7,6 +7,7 @@ const entityName = 'rewardTypes';
 const downloadedFileName = 'downloaded';
 const transformedFileName = 'transformed';
 const createdFileName = 'created';
+const errorFileName = 'errors';
 
 const fetch = async () => {
   try {
@@ -140,17 +141,29 @@ function transformRewardTypes(inputObject, customFields, unitOfMeasure) {
 async function create() {
   const rewardTypesData = require(`./entitiesData/${entityName}/transformed.json`);
 
-  const api = await getToken();
   const createdRewardTypes = [];
+  const errors = [];
 
   for (let i = 0; i < rewardTypesData.length; i++) {
     try {
+      const api = await getToken();
+
       const { data } = await api.post('/reward-types', [rewardTypesData[i]]);
 
       if (data.errors) {
         data.errors.forEach(item => {
           console.log('Create Reward Type Error => ', item.detail);
         });
+      }
+
+      if (data.errors.length) {
+        const error = {
+          name: rewardTypesData[i].name,
+          key: rewardTypesData[i].key,
+          errors: data.errors
+        };
+        errors.push(error);
+
       }
 
       if (data.results.length) {
@@ -161,7 +174,15 @@ async function create() {
     }
   }
 
-  writeFile(entityName, createdFileName, createdRewardTypes);
+  if (errors.length) {
+    console.log('errors', errors.length);
+    writeFile(entityName, errorFileName, errors);
+  }
+
+  if (createdRewardTypes.length) {
+    console.log('Create RewardTypes - ', createdRewardTypes.length);
+    writeFile(entityName, createdFileName, createdRewardTypes);
+  }
 }
 
 const args = process.argv.slice(2);

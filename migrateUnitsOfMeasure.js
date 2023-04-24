@@ -6,6 +6,7 @@ const entityName = 'unitsOfMeasure';
 const downloadedFileName = 'downloaded';
 const transformedFileName = 'transformed';
 const createdFileName = 'created';
+const errorFileName = 'errors';
 
 const fetch = async () => {
   try {
@@ -88,11 +89,13 @@ function transformUnitsOfMeasure(inputObject, customFields) {
 async function create() {
   const unitsOfMeasureData = require(`./entitiesData/${entityName}/transformed.json`);
 
-  const api = await getToken();
   const createdUnitsOfMeasure = [];
+  const errors = [];
 
   for (let i = 0; i < unitsOfMeasureData.length; i++) {
     try {
+      const api = await getToken();
+
       const { data } = await api.post('/units-of-measure', [unitsOfMeasureData[i]]);
 
       if (data.errors) {
@@ -109,7 +112,17 @@ async function create() {
     }
   }
 
-  writeFile(entityName, createdFileName, createdUnitsOfMeasure);
+  console.log('unitsOfMeasureData', unitsOfMeasureData.length);
+
+  if (errors.length) {
+    console.log('errors', errors.length);
+    writeFile(entityName, errorFileName, errors);
+  }
+
+  if (createdUnitsOfMeasure.length) {
+    console.log('copied UnitsOfMeasure', createdUnitsOfMeasure.length);
+    writeFile(entityName, createdFileName, createdUnitsOfMeasure);
+  }
 }
 
 const args = process.argv.slice(2);

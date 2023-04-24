@@ -67,12 +67,13 @@ function transformMember(inputObject) {
 async function create() {
   const memberData = require(`./entitiesData/${entityName}/transformed.json`);
 
-  const api = await getToken();
   const createdMembers = [];
   const errors = [];
 
   for (let i = 0; i < memberData.length; i++) {
     try {
+      const api = await getToken();
+
       const { data } = await api.post('/members', [memberData[i]]);
 
       if (data.errors.length) {
