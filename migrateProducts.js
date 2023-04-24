@@ -41,6 +41,33 @@ const fetch = async () => {
 const transform = async () => {
   const allProducts = require(`./entitiesData/${entityName}/downloaded.json`);
 
+  const refIdCount = {};
+
+  for (const product of allProducts) {
+    const productRefId = product.productRefId;
+
+    if (productRefId) {
+      const num = parseInt(productRefId.replace('Some(', '').replace(')', ''));
+
+      if (num) {
+        refIdCount[num] = (refIdCount[num] || 0) + 1;
+      }
+    }
+  }
+
+  for (const product of allProducts) {
+    const productRefId = product.productRefId;
+
+    if (productRefId) {
+      const num = parseInt(productRefId.replace('Some(', '').replace(')', ''));
+
+      if (num && refIdCount[num] === 1) {
+        product.productRefId = num.toString();
+      }
+    }
+  }
+
+
   const transformedMembers = [];
   for (let i = 0; i < allProducts.length; i++) {
     const record = allProducts[i];
