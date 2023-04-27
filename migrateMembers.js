@@ -38,7 +38,7 @@ const fetch = async () => {
   }
 };
 
-const transform = async () => {
+const transform = () => {
   const allMembers = require(`./entitiesData/${entityName}/downloaded.json`);
 
   const transformedMembers = [];
@@ -52,14 +52,37 @@ const transform = async () => {
 };
 
 function transformMember(inputObject) {
+  let customFields = null;
+
+  if (inputObject.groups.length) {
+    customFields = inputObject.groups.reduce((acc, curr) => {
+      const [key, value] = curr.match(/(.+)\[(\d+)\]/)?.slice(1) || [null, null];
+      if (key && value) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+  }
+
+  const metadata = inputObject.metadata && inputObject.metadata.length
+    ? inputObject.metadata.reduce((acc, curr) => {
+      if (curr.value !== '') {
+        acc[curr.key] = curr.value;
+      }
+
+      return acc;
+      }, {})
+    : null;
+
+
   return {
     name: inputObject.name,
     memberRefId: inputObject.memberRefId,
     memberType: inputObject.memberType,
     addConstraints: null,
-    timeZoneOffset: null,
-    customFields: null,
-    metadata: null,
+    timeZoneOffset: inputObject.timeZoneOffset,
+    customFields: customFields,
+    metadata: metadata,
     tags: null,
   };
 }
