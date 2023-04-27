@@ -79,8 +79,12 @@ const transform = async () => {
 };
 
 function transformProduct(inputObject) {
-  const metadata = inputObject.metadata ? inputObject.metadata[0] : null;
-  delete metadata?.jsonClass;
+  const metadata = inputObject.metadata.length
+    ? inputObject.metadata.reduce((acc, curr) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {})
+    : null;
 
   return {
     productRefId: inputObject.productRefId,

@@ -63,8 +63,12 @@ const fetchRewards = async () => {
 };
 
 async function transformReward(inputObject, customFields) {
-  const metadata = inputObject.metadata ? inputObject.metadata[0] : null;
-  delete metadata?.jsonClass;
+  const metadata = inputObject.metadata.length
+    ? inputObject.metadata.reduce((acc, curr) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {})
+    : null;
 
   const constraints = [];
   if (inputObject.memberAcknowledgmentRequired === true) {

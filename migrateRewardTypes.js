@@ -120,8 +120,12 @@ const transform = async () => {
 };
 
 function transformRewardTypes(inputObject, customFields, unitOfMeasure) {
-  const metadata = inputObject.metadata ? inputObject.metadata[0] : null;
-  delete metadata?.jsonClass;
+  const metadata = inputObject.metadata.length
+    ? inputObject.metadata.reduce((acc, curr) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {})
+    : null;
 
   const constraints = [];
   if (inputObject.system === true) constraints.push('system');

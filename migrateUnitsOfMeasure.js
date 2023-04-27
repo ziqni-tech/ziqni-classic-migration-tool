@@ -69,8 +69,12 @@ const transform = async () => {
 };
 
 function transformUnitsOfMeasure(inputObject, customFields) {
-  const metadata = inputObject.metadata ? inputObject.metadata[0] : null;
-  delete metadata?.jsonClass;
+  const metadata = inputObject.metadata.length
+    ? inputObject.metadata.reduce((acc, curr) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {})
+    : null;
 
   return {
     name: inputObject.name,
@@ -82,7 +86,7 @@ function transformUnitsOfMeasure(inputObject, customFields) {
     symbol: inputObject.symbol.length ? inputObject.symbol : null,
     description: inputObject.description.length ? inputObject.description : null,
     customFields: customFields,
-    metadata: null
+    metadata: metadata
   };
 }
 
