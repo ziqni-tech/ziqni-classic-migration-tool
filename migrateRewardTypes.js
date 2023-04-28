@@ -1,6 +1,7 @@
 const { axiosGetDataInstance, getToken } = require('./axiosInstance');
 const writeFile = require('./utils/writeFile');
 const generateKeyName = require('./utils/generateKeyName');
+const countErrorMessages = require('./utils/countErrorMessages');
 
 const entityName = 'rewardTypes';
 
@@ -180,6 +181,8 @@ async function create() {
 
   if (errors.length) {
     console.log('errors', errors.length);
+    const countErrors = countErrorMessages(errors)
+    console.log('errors', countErrors);
     writeFile(entityName, errorFileName, errors);
   }
 
