@@ -121,7 +121,7 @@ const transform = async () => {
 };
 
 function transformRewardTypes(inputObject, customFields, unitOfMeasure) {
-  const metadata = inputObject.metadata.length
+  const metadata = inputObject.metadata && inputObject.metadata.length
     ? inputObject.metadata.reduce((acc, curr) => {
       acc[curr.key] = curr.value;
       return acc;
