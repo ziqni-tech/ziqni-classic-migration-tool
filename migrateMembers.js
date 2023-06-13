@@ -55,14 +55,15 @@ const transform = () => {
 function transformMember(inputObject) {
   let customFields = null;
 
-  if (inputObject.groups.length) {
-    customFields = inputObject.groups.reduce((acc, curr) => {
-      const [key, value] = curr.match(/(.+)\[(\d+)\]/)?.slice(1) || [null, null];
-      if (key && value) {
-        acc[key] = value;
+  if (inputObject.groups && inputObject.groups.length) {
+    customFields = {};
+    inputObject.groups.forEach(group => {
+      const matches = group.match(/(.+)\[(.+)\]/);
+      if (matches && matches.length === 3) {
+        const key = matches[1];
+        customFields[key] = matches[2];
       }
-      return acc;
-    }, {});
+    });
   }
 
   const metadata = inputObject.metadata && inputObject.metadata.length
